@@ -30,6 +30,14 @@ TAINTED_SOURCES = frozenset(
         "args",
         "kwargs",
         "params",
+        # 2025/2026: agentic & tool-use taint sources
+        "tool_input",
+        "tool_args",
+        "user_query",
+        "user_prompt",
+        "chat_input",
+        "retrieved_docs",
+        "rag_context",
     }
 )
 
@@ -47,6 +55,15 @@ LLM_API_CALLS = frozenset(
         "generate",
         "complete",
         "chat",
+        # 2025/2026: newer SDK patterns
+        "client.responses.create",
+        "responses.create",
+        "client.complete",
+        "model.generate",
+        "llm.invoke",
+        "llm.ainvoke",
+        "chain.invoke",
+        "chain.ainvoke",
     }
 )
 
@@ -62,6 +79,13 @@ DANGEROUS_SINKS = frozenset(
         "os.system",
         "os.popen",
         "open",
+        # 2025/2026: additional sinks
+        "pickle.loads",
+        "yaml.load",
+        "yaml.unsafe_load",
+        "importlib.import_module",
+        "__import__",
+        "shutil.rmtree",
     }
 )
 
@@ -130,10 +154,40 @@ class PythonMatcher:
         self.source = source
         self.source_lines = source.splitlines()
         self.file_path = file_path
+        self.tree: ast.Module | None
         try:
             self.tree = ast.parse(source)
         except SyntaxError:
             self.tree = None
+        # Build taint propagation map: track variables assigned from tainted sources
+        self._tainted_vars: set[str] = set()
+        if self.tree is not None:
+            self._build_taint_map()
+
+    @property
+    def _tree(self) -> ast.Module:
+        """Return parsed AST; only call when self.tree is known non-None."""
+        assert self.tree is not None
+        return self.tree
+
+    def _build_taint_map(self) -> None:
+        """Single-pass taint propagation: track variables assigned from tainted sources."""
+        assert self.tree is not None
+        for node in ast.walk(self._tree):
+            if isinstance(node, ast.Assign) and isinstance(node.value, ast.Name):
+                if (
+                    node.value.id in TAINTED_SOURCES
+                    or node.value.id in self._tainted_vars
+                ):
+                    for target in node.targets:
+                        if isinstance(target, ast.Name):
+                            self._tainted_vars.add(target.id)
+            elif isinstance(node, ast.Assign) and isinstance(node.value, ast.Attribute):
+                attr_name = _get_func_name(node.value)
+                if attr_name in TAINTED_SOURCES:
+                    for target in node.targets:
+                        if isinstance(target, ast.Name):
+                            self._tainted_vars.add(target.id)
 
     def match_rule(self, rule: Rule) -> list[Finding]:
         if self.tree is None:
@@ -147,6 +201,7 @@ class PythonMatcher:
         return findings
 
     def _match_pattern(self, pattern: Pattern, rule: Rule) -> list[Finding]:
+        assert self.tree is not None  # caller (match_rule) checks for None
         if pattern.type == "function_call":
             return self._match_function_call(pattern, rule)
         elif pattern.type == "argument_missing":
@@ -157,6 +212,8 @@ class PythonMatcher:
             return self._match_output_to_sink(pattern, rule)
         elif pattern.type == "string_concat_taint":
             return self._match_string_concat_taint(pattern, rule)
+        elif pattern.type == "import_check":
+            return self._match_import_check(pattern, rule)
         return []
 
     def _make_finding(self, rule: Rule, node: ast.AST) -> Finding:
@@ -184,7 +241,7 @@ class PythonMatcher:
         target_funcs.update(pattern.functions)
 
         findings: list[Finding] = []
-        for node in ast.walk(self.tree):
+        for node in ast.walk(self._tree):
             if not isinstance(node, ast.Call):
                 continue
             func_name = _get_func_name(node.func)
@@ -200,7 +257,7 @@ class PythonMatcher:
         target_funcs.update(pattern.functions)
 
         findings: list[Finding] = []
-        for node in ast.walk(self.tree):
+        for node in ast.walk(self._tree):
             if not isinstance(node, ast.Call):
                 continue
             func_name = _get_func_name(node.func)
@@ -218,25 +275,57 @@ class PythonMatcher:
         if pattern.function:
             target_funcs.add(pattern.function)
         target_funcs.update(pattern.functions)
-        tainted_sources = frozenset(pattern.tainted_sources) | TAINTED_SOURCES
+        tainted_sources = (
+            frozenset(pattern.tainted_sources) | TAINTED_SOURCES | self._tainted_vars
+        )
 
         findings: list[Finding] = []
-        for node in ast.walk(self.tree):
+        for node in ast.walk(self._tree):
             if not isinstance(node, ast.Call):
                 continue
             func_name = _get_func_name(node.func)
             if not any(func_name.endswith(t) or func_name == t for t in target_funcs):
                 continue
-            # Check all arguments for taint
+            # Check all arguments (including one level into containers) for taint
             all_args: list[ast.expr] = list(node.args)
             all_args.extend(kw.value for kw in node.keywords)
             for arg in all_args:
-                if _contains_tainted_string(arg, tainted_sources) or _is_tainted(
-                    arg, tainted_sources
-                ):
+                if self._is_arg_tainted(arg, tainted_sources):
                     findings.append(self._make_finding(rule, node))
                     break
         return findings
+
+    @staticmethod
+    def _is_arg_tainted(node: ast.expr, tainted: frozenset[str]) -> bool:
+        """Check if an argument expression contains tainted data.
+
+        Looks into f-strings, string concat, and one level of container
+        nesting (dicts/lists) — but does NOT recursively walk the entire
+        AST subtree to avoid false positives.
+        """
+        if _is_tainted(node, tainted) or _contains_tainted_string(node, tainted):
+            return True
+        # Look one level into lists: [expr, expr, ...]
+        if isinstance(node, ast.List):
+            for elt in node.elts:
+                if _is_tainted(elt, tainted) or _contains_tainted_string(elt, tainted):
+                    return True
+                # Look into dicts inside lists: [{"key": tainted_val}]
+                if isinstance(elt, ast.Dict):
+                    for v in elt.values:
+                        if v is not None and (
+                            _is_tainted(v, tainted)
+                            or _contains_tainted_string(v, tainted)
+                        ):
+                            return True
+        # Look one level into dicts: {"key": tainted_val}
+        if isinstance(node, ast.Dict):
+            for v in node.values:
+                if v is not None and (
+                    _is_tainted(v, tainted) or _contains_tainted_string(v, tainted)
+                ):
+                    return True
+        return False
 
     def _match_output_to_sink(self, pattern: Pattern, rule: Rule) -> list[Finding]:
         """Detect LLM output passed to dangerous sinks."""
@@ -245,7 +334,7 @@ class PythonMatcher:
 
         # First pass: collect variables assigned from LLM calls
         llm_vars: set[str] = set()
-        for node in ast.walk(self.tree):
+        for node in ast.walk(self._tree):
             if isinstance(node, ast.Assign):
                 if isinstance(node.value, ast.Call):
                     call_name = _get_func_name(node.value.func)
@@ -260,9 +349,18 @@ class PythonMatcher:
                         if isinstance(node.target, ast.Name):
                             llm_vars.add(node.target.id)
 
-        # Second pass: find sink calls using LLM-derived variables
+        # Second pass: propagate taint through assignments derived from LLM vars
+        # e.g., code = response.choices[0].message.content
+        for node in ast.walk(self._tree):
+            if isinstance(node, ast.Assign):
+                if self._expr_uses_vars(node.value, llm_vars):
+                    for target in node.targets:
+                        if isinstance(target, ast.Name):
+                            llm_vars.add(target.id)
+
+        # Third pass: find sink calls using LLM-derived variables
         findings: list[Finding] = []
-        for node in ast.walk(self.tree):
+        for node in ast.walk(self._tree):
             if not isinstance(node, ast.Call):
                 continue
             sink_name = _get_func_name(node.func)
@@ -274,10 +372,46 @@ class PythonMatcher:
                 if isinstance(arg, ast.Name) and arg.id in llm_vars:
                     findings.append(self._make_finding(rule, node))
                     break
+                elif self._expr_uses_vars(arg, llm_vars):
+                    findings.append(self._make_finding(rule, node))
+                    break
         return findings
+
+    @staticmethod
+    def _expr_uses_vars(node: ast.expr, var_names: set[str]) -> bool:
+        """Check if an expression references any of the given variable names."""
+        if isinstance(node, ast.Name):
+            return node.id in var_names
+        elif isinstance(node, ast.Attribute):
+            return PythonMatcher._expr_uses_vars(node.value, var_names)
+        elif isinstance(node, ast.Subscript):
+            return PythonMatcher._expr_uses_vars(node.value, var_names)
+        elif isinstance(node, ast.Call):
+            return PythonMatcher._expr_uses_vars(node.func, var_names)
+        return False
 
     def _match_string_concat_taint(self, pattern: Pattern, rule: Rule) -> list[Finding]:
         """Detect string concatenation of tainted values in LLM API arguments."""
         # This is similar to argument_tainted but more specifically looks for
         # f-strings and concatenations with tainted data in any LLM API call
         return self._match_argument_tainted(pattern, rule)
+
+    def _match_import_check(self, pattern: Pattern, rule: Rule) -> list[Finding]:
+        """Detect imports of flagged modules."""
+        target_module = pattern.module
+        if not target_module:
+            return []
+        findings: list[Finding] = []
+        for node in ast.walk(self._tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    if alias.name == target_module or alias.name.startswith(
+                        f"{target_module}."
+                    ):
+                        findings.append(self._make_finding(rule, node))
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                if node.module == target_module or node.module.startswith(
+                    f"{target_module}."
+                ):
+                    findings.append(self._make_finding(rule, node))
+        return findings
