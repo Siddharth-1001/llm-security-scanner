@@ -1,6 +1,7 @@
 """Tests for Finding and Severity models."""
+
 from pathlib import Path
-import pytest
+
 from llm_scanner.findings.models import CodeSnippet, Finding, Severity
 
 
@@ -25,19 +26,19 @@ def test_code_snippet_str():
 
 
 def _make_finding(**kwargs) -> Finding:
-    defaults = dict(
-        rule_id="LLM01-001",
-        rule_name="test-rule",
-        owasp_category="LLM01",
-        cwe="CWE-77",
-        severity=Severity.HIGH,
-        file_path=Path("test.py"),
-        line=10,
-        col=1,
-        snippet=CodeSnippet(lines=["code"], start_line=10),
-        description="Test description",
-        remediation="Fix it",
-    )
+    defaults = {
+        "rule_id": "LLM01-001",
+        "rule_name": "test-rule",
+        "owasp_category": "LLM01",
+        "cwe": "CWE-77",
+        "severity": Severity.HIGH,
+        "file_path": Path("test.py"),
+        "line": 10,
+        "col": 1,
+        "snippet": CodeSnippet(lines=["code"], start_line=10),
+        "description": "Test description",
+        "remediation": "Fix it",
+    }
     defaults.update(kwargs)
     return Finding(**defaults)
 
