@@ -36,11 +36,13 @@ def apply_suppressions(
         if finding.file_path not in cache:
             cache[finding.file_path] = _parse_suppressions(source)
         suppressions = cache[finding.file_path]
-        sup = suppressions.get(finding.line)
-        if sup is None and finding.line in suppressions:
-            # None means suppress all
+        if finding.line not in suppressions:
+            continue
+        sup = suppressions[finding.line]
+        if sup is None:
+            # None means suppress all rules on this line
             finding.suppressed = True
-        elif isinstance(sup, set) and finding.rule_id in sup:
+        elif finding.rule_id in sup:
             finding.suppressed = True
 
     return findings
