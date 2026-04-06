@@ -1,5 +1,7 @@
 """Main scanner orchestrator — runs the full analysis pipeline."""
+
 from __future__ import annotations
+
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -82,9 +84,14 @@ def run_scan(cfg: ScanConfig) -> ScanResult:
             parsed = python_parser.parse(sf.path)
             if parsed is None:
                 result.files_skipped += 1
+                result.errors.append(f"Failed to read {sf.path}")
                 continue
             source_cache[sf.path] = parsed.source
             matcher = PythonMatcher(parsed.source, sf.path)
+            if matcher.tree is None:
+                result.errors.append(f"Syntax error in {sf.path}")
+                result.files_skipped += 1
+                continue
             for rule in rules:
                 if "python" not in rule.languages:
                     continue
@@ -92,15 +99,16 @@ def run_scan(cfg: ScanConfig) -> ScanResult:
                     findings = matcher.match_rule(rule)
                     # Filter by threshold
                     findings = [
-                        f for f in findings
-                        if _meets_threshold(f.severity, threshold)
+                        f for f in findings if _meets_threshold(f.severity, threshold)
                     ]
                     all_findings.extend(findings)
                 except Exception as e:
-                    logger.debug(f"Rule {rule.id} error on {sf.path}: {e}")
+                    msg = f"Rule {rule.id} failed on {sf.path}: {e}"
+                    logger.warning(msg)
+                    result.errors.append(msg)
             result.files_scanned += 1
         else:
-            # JS/TS: Phase 1 — count but skip matching
+            # JS/TS: count but skip matching (not yet supported)
             result.files_scanned += 1
 
     # Apply inline suppressions
