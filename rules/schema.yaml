@@ -1,0 +1,57 @@
+# LLM Security Scanner — Rule Schema Definition
+# Each rule YAML file must conform to this schema.
+# Required fields are marked with (required).
+
+# (required) Unique rule identifier. Format: LLMxx-NNN
+id: string
+
+# (required) Human-readable rule name (kebab-case)
+name: string
+
+# (required) OWASP LLM Top 10 category. One of: LLM01-LLM10
+category: string
+
+# (required) Severity level. One of: critical, high, medium, low, info
+severity: string
+
+# CWE identifier (e.g. "CWE-77")
+cwe: string
+
+# (required) Target languages. List of: python, javascript, typescript
+languages:
+  - python
+
+# (required) Human-readable description of what the rule detects and why it matters
+description: string
+
+# (required) Actionable remediation guidance with code examples if possible
+remediation: string
+
+# References (OWASP links, CVEs, articles)
+references:
+  - string
+
+# Tags for filtering/grouping
+tags:
+  - string
+
+# (required) List of detection patterns
+patterns:
+  - type: string   # function_call | argument_missing | argument_tainted | output_to_sink | string_concat_taint
+
+    # For function_call, argument_missing, argument_tainted, output_to_sink:
+    # Single function name (dotted) OR use 'functions' for multiple
+    function: string
+    functions:
+      - string
+
+    # For argument_missing: the argument name that must be present
+    argument: string
+
+    # For argument_tainted: list of tainted source variable names to check
+    tainted_sources:
+      - string
+
+    # For output_to_sink: list of dangerous sink functions
+    sinks:
+      - string

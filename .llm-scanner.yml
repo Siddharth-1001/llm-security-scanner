@@ -1,0 +1,28 @@
+# LLM Security Scanner Configuration
+# Place this file in your project root
+
+# Severity threshold: findings below this level won't cause CI failure
+# Options: critical, high, medium, low, info
+severity_threshold: high
+
+# Output format: text, json, sarif
+output_format: text
+
+# Directories/files to exclude from scanning (glob patterns)
+exclude:
+  - "**/.git/**"
+  - "**/node_modules/**"
+  - "**/__pycache__/**"
+  - "**/.venv/**"
+  - "**/venv/**"
+  - "**/dist/**"
+  - "**/build/**"
+  - "tests/fixtures/**"
+
+# Specific rules to disable (use rule IDs)
+# disable_rules:
+#   - LLM01-001
+
+# Custom rules directories
+# custom_rules_dirs:
+#   - ./my-custom-rules

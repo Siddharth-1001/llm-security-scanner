@@ -1,0 +1,31 @@
+id: LLM04-003
+name: missing-request-timeout
+category: LLM04
+severity: medium
+cwe: CWE-400
+languages:
+  - python
+description: >
+  LLM API HTTP client is configured without a timeout. If the LLM service becomes
+  slow or unresponsive, requests will hang indefinitely, potentially exhausting
+  connection pools and causing cascading failures in the application.
+remediation: >
+  Configure timeouts on HTTP clients used for LLM API calls:
+
+    import httpx
+    client = httpx.Client(timeout=30.0)  # 30 second timeout
+
+    # Or with the OpenAI SDK:
+    openai_client = openai.OpenAI(timeout=30.0)
+references:
+  - https://owasp.org/www-project-top-10-for-llm-applications/
+tags:
+  - model-dos
+  - timeout
+patterns:
+  - type: function_call
+    functions:
+      - requests.get
+      - requests.post
+      - httpx.Client
+      - aiohttp.ClientSession

@@ -1,0 +1,38 @@
+id: LLM04-001
+name: missing-max-tokens-openai
+category: LLM04
+severity: high
+cwe: CWE-400
+languages:
+  - python
+description: >
+  An OpenAI API call (ChatCompletion.create or chat.completions.create) is made
+  without specifying the max_tokens parameter. Without this limit, an attacker
+  can craft inputs that cause the model to generate extremely long responses,
+  leading to excessive API costs, latency, and potential denial of service.
+remediation: >
+  Always set max_tokens (or max_completion_tokens for newer APIs) on all LLM API calls.
+  Choose a value appropriate for your use case and implement per-user rate limiting.
+
+  Example:
+    response = client.chat.completions.create(
+        model="gpt-4",
+        messages=messages,
+        max_tokens=1000,  # Set an appropriate limit
+    )
+references:
+  - https://owasp.org/www-project-top-10-for-llm-applications/
+  - https://llmtop10.com/llm04/
+  - https://platform.openai.com/docs/api-reference/chat/create
+tags:
+  - model-dos
+  - rate-limiting
+  - openai
+patterns:
+  - type: argument_missing
+    functions:
+      - ChatCompletion.create
+      - chat.completions.create
+      - client.chat.completions.create
+      - openai.ChatCompletion.create
+    argument: max_tokens

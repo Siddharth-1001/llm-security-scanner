@@ -1,0 +1,38 @@
+id: LLM02-001
+name: llm-output-in-eval
+category: LLM02
+severity: critical
+cwe: CWE-95
+languages:
+  - python
+description: >
+  Output from an LLM API call is passed directly to eval() or exec() without
+  sanitization. Since LLM outputs are untrusted and potentially attacker-controlled
+  (via prompt injection), this creates an arbitrary code execution vulnerability.
+remediation: >
+  Never pass LLM output to eval(), exec(), or compile(). If you need the LLM to
+  produce executable code, run it in a sandboxed environment (e.g., RestrictedPython,
+  subprocess with strict resource limits, or a dedicated container). Always validate
+  and review generated code before execution.
+references:
+  - https://owasp.org/www-project-top-10-for-llm-applications/
+  - https://llmtop10.com/llm02/
+  - https://cwe.mitre.org/data/definitions/95.html
+tags:
+  - insecure-output
+  - code-execution
+  - eval
+patterns:
+  - type: output_to_sink
+    sinks:
+      - eval
+      - exec
+      - compile
+    functions:
+      - ChatCompletion.create
+      - chat.completions.create
+      - client.chat.completions.create
+      - messages.create
+      - client.messages.create
+      - generate
+      - complete

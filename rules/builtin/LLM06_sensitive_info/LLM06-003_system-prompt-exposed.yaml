@@ -1,0 +1,27 @@
+id: LLM06-003
+name: system-prompt-in-api-response
+category: LLM06
+severity: high
+cwe: CWE-200
+languages:
+  - python
+description: >
+  The system prompt content (which may contain business logic, security instructions,
+  or proprietary information) is included in API responses returned to end users.
+  System prompts should be kept confidential and never exposed to end users.
+remediation: >
+  Strip system prompt information from responses before returning them to clients.
+  Only return the assistant's response content. Implement a response filter that
+  ensures system prompt content is not echoed back.
+references:
+  - https://owasp.org/www-project-top-10-for-llm-applications/
+tags:
+  - sensitive-info
+  - system-prompt
+  - information-disclosure
+patterns:
+  - type: function_call
+    functions:
+      - jsonify
+      - json.dumps
+      - return

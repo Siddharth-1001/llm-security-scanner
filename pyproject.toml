@@ -1,0 +1,56 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "llm-security-scanner"
+version = "0.1.0"
+description = "Static analysis tool for detecting OWASP LLM Top 10 vulnerabilities in LLM-integrated applications"
+readme = "README.md"
+license = {text = "Apache-2.0"}
+requires-python = ">=3.10"
+authors = [{name = "LLM Security Scanner Contributors"}]
+keywords = ["security", "llm", "static-analysis", "owasp", "sast"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security",
+]
+dependencies = [
+    "click>=8.1",
+    "rich>=13.0",
+    "pydantic>=2.0",
+    "pyyaml>=6.0",
+    "pathspec>=0.11",
+]
+
+[project.optional-dependencies]
+dev = ["ruff>=0.4", "mypy>=1.10", "pre-commit>=3.7"]
+test = ["pytest>=8.0", "pytest-cov>=5.0"]
+
+[project.scripts]
+llm-scan = "llm_scanner.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/llm_scanner"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C4", "PT"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=src/llm_scanner --cov-report=term-missing"
