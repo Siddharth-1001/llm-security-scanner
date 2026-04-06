@@ -1,0 +1,42 @@
+id: LLM02-005
+name: llm-output-in-deserialization
+category: LLM02
+severity: critical
+cwe: CWE-502
+languages:
+  - python
+description: >
+  LLM-generated output is passed to a deserialization function (pickle, yaml.load,
+  json with custom decoders). An attacker who manipulates LLM output through prompt
+  injection can achieve Remote Code Execution via unsafe deserialization.
+remediation: >
+  Never deserialize untrusted data from LLM responses. Use safe alternatives:
+
+    # Dangerous:
+    data = pickle.loads(llm_response)
+    data = yaml.load(llm_response, Loader=yaml.FullLoader)
+
+    # Safe:
+    data = json.loads(llm_response)  # JSON is safe for data
+    data = yaml.safe_load(llm_response)  # safe_load only
+references:
+  - https://owasp.org/www-project-top-10-for-llm-applications/
+  - https://cwe.mitre.org/data/definitions/502.html
+tags:
+  - insecure-output
+  - deserialization
+  - rce
+patterns:
+  - type: output_to_sink
+    functions:
+      - ChatCompletion.create
+      - chat.completions.create
+      - client.chat.completions.create
+      - client.messages.create
+      - messages.create
+    sinks:
+      - pickle.loads
+      - pickle.load
+      - yaml.load
+      - yaml.unsafe_load
+      - marshal.loads
