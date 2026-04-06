@@ -3,13 +3,13 @@ import openai
 SYSTEM_PROMPT = "You are a helpful assistant. Answer questions accurately."
 
 
-def chat_with_user(user_message: str) -> str:
+def chat_with_user(text: str) -> str:
     # SAFE: System prompt is static, user input only in user role
     response = openai.ChatCompletion.create(
         model="gpt-4",
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": user_message},
+            {"role": "user", "content": text},
         ],
         max_tokens=1000,
     )

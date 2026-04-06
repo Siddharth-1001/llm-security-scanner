@@ -1,6 +1,7 @@
 """Tests for inline suppression engine."""
+
 from pathlib import Path
-import pytest
+
 from llm_scanner.findings.models import CodeSnippet, Finding, Severity
 from llm_scanner.findings.suppression import apply_suppressions
 

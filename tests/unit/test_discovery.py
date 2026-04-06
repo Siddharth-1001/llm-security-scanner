@@ -1,7 +1,10 @@
 """Tests for file discovery."""
+
 from pathlib import Path
+
 import pytest
-from llm_scanner.discovery import Language, SourceFile, discover_files
+
+from llm_scanner.discovery import Language, discover_files
 
 
 def test_discovers_python_files(tmp_path):

@@ -1,7 +1,10 @@
 """Integration tests for the full scan pipeline."""
-from pathlib import Path
+
 import json
+from pathlib import Path
+
 import pytest
+
 from llm_scanner.config import ScanConfig
 from llm_scanner.scanner import run_scan
 
@@ -72,6 +75,7 @@ def test_disabled_rule_suppresses_finding(base_config):
 
 def test_json_output_is_valid(base_config):
     from llm_scanner.formatters.json_fmt import format_json
+
     result = run_scan(base_config)
     json_str = format_json(result)
     data = json.loads(json_str)
@@ -82,6 +86,7 @@ def test_json_output_is_valid(base_config):
 
 def test_sarif_output_is_valid(base_config):
     from llm_scanner.formatters.sarif import format_sarif
+
     result = run_scan(base_config)
     sarif_str = format_sarif(result)
     data = json.loads(sarif_str)
@@ -92,6 +97,7 @@ def test_sarif_output_is_valid(base_config):
 
 def test_text_output_not_empty(base_config):
     from llm_scanner.formatters.text import format_text
+
     result = run_scan(base_config)
     text = format_text(result, use_color=False)
     assert len(text) > 0

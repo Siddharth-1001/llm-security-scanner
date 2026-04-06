@@ -1,6 +1,5 @@
 """Tests for rule loading engine."""
-from pathlib import Path
-import pytest
+
 from llm_scanner.rules.engine import load_rules
 
 
@@ -12,11 +11,12 @@ def test_loads_builtin_rules():
 def test_rules_have_required_fields():
     rules = load_rules()
     for rule in rules:
-        assert rule.id, f"Rule missing id"
+        assert rule.id, "Rule missing id"
         assert rule.name, f"Rule {rule.id} missing name"
         assert rule.category.startswith("LLM"), f"Rule {rule.id} bad category"
-        assert rule.severity in ("critical", "high", "medium", "low", "info"), \
+        assert rule.severity in ("critical", "high", "medium", "low", "info"), (
             f"Rule {rule.id} bad severity: {rule.severity}"
+        )
         assert rule.languages, f"Rule {rule.id} missing languages"
         assert rule.patterns, f"Rule {rule.id} missing patterns"
 
