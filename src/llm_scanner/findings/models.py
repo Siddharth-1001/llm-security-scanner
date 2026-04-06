@@ -16,7 +16,9 @@ class Severity(str, Enum):
     def order(self) -> int:
         return {"critical": 5, "high": 4, "medium": 3, "low": 2, "info": 1}[self.value]
 
-    def __lt__(self, other: Severity) -> bool:
+    def __lt__(self, other: object) -> bool:
+        if not isinstance(other, Severity):
+            return NotImplemented
         return self.order < other.order
 
 
@@ -47,7 +49,7 @@ class Finding:
     suppressed: bool = False
     tags: list[str] = field(default_factory=list)
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, object]:
         return {
             "rule_id": self.rule_id,
             "rule_name": self.rule_name,

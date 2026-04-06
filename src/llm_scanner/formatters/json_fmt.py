@@ -1,5 +1,7 @@
 """JSON output formatter."""
+
 from __future__ import annotations
+
 import json
 from datetime import datetime, timezone
 
@@ -21,5 +23,6 @@ def format_json(result: ScanResult) -> str:
             "by_category": result.counts_by_category(),
         },
         "findings": [f.to_dict() for f in result.active_findings],
+        "errors": result.errors,
     }
     return json.dumps(output, indent=2, default=str)

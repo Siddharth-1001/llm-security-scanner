@@ -170,6 +170,7 @@ def load_config(
     config_dict: dict[str, Any] = {}
 
     # Resolve config file.
+    config_file: Path | None
     if path is not None:
         config_file = Path(path).expanduser().resolve()
         if not config_file.is_file():

@@ -1,9 +1,9 @@
 """Python source file parser."""
+
 from __future__ import annotations
-from pathlib import Path
 
 from llm_scanner.discovery import Language
-from llm_scanner.parsers.base import BaseParser, ParsedFile
+from llm_scanner.parsers.base import BaseParser
 
 
 class PythonParser(BaseParser):

@@ -1,4 +1,5 @@
 """CLI entry point for llm-security-scanner."""
+
 from __future__ import annotations
 
 import sys
@@ -9,7 +10,6 @@ from rich.console import Console
 
 from llm_scanner import __version__
 from llm_scanner.config import load_config
-from llm_scanner.findings.models import Severity
 from llm_scanner.formatters.json_fmt import format_json
 from llm_scanner.formatters.sarif import format_sarif
 from llm_scanner.formatters.text import format_text
@@ -18,7 +18,11 @@ from llm_scanner.scanner import ScanResult, run_scan
 console = Console(stderr=True)
 
 SEVERITY_ORDER = {
-    "critical": 5, "high": 4, "medium": 3, "low": 2, "info": 1,
+    "critical": 5,
+    "high": 4,
+    "medium": 3,
+    "low": 2,
+    "info": 1,
 }
 
 
@@ -35,32 +39,84 @@ def cli() -> None:
     default=Path("."),
     required=False,
 )
-@click.option("--config", "-c", type=click.Path(path_type=Path), default=None,
-              help="Path to .llm-scanner.yml config file.")
-@click.option("--severity", "-s",
-              type=click.Choice(["critical", "high", "medium", "low", "info"], case_sensitive=False),
-              default=None, help="Minimum severity threshold (overrides config).")
-@click.option("--format", "-f", "output_format",
-              type=click.Choice(["text", "json", "sarif"], case_sensitive=False),
-              default=None, help="Output format (overrides config).")
-@click.option("--output", "-o", type=click.Path(path_type=Path), default=None,
-              help="Write results to file instead of stdout.")
-@click.option("--rule", "enabled_rules", multiple=True,
-              help="Enable only specific rule IDs (repeatable).")
-@click.option("--disable-rule", "disabled_rules", multiple=True,
-              help="Disable specific rule IDs (repeatable).")
-@click.option("--rules-dir", "rules_dirs", multiple=True, type=click.Path(path_type=Path),
-              help="Additional directory containing custom rules (repeatable).")
-@click.option("--exclude", "excludes", multiple=True,
-              help="Glob pattern to exclude from scanning (repeatable).")
-@click.option("--quiet", "-q", is_flag=True, default=False,
-              help="Suppress banner and summary; output findings only.")
-@click.option("--no-progress", is_flag=True, default=False,
-              help="Suppress progress output to stderr.")
-@click.option("--fail-on", "fail_on",
-              type=click.Choice(["critical", "high", "medium", "low", "info", "never"], case_sensitive=False),
-              default=None,
-              help="Exit with code 1 if any finding at or above this severity is found.")
+@click.option(
+    "--config",
+    "-c",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Path to .llm-scanner.yml config file.",
+)
+@click.option(
+    "--severity",
+    "-s",
+    type=click.Choice(
+        ["critical", "high", "medium", "low", "info"], case_sensitive=False
+    ),
+    default=None,
+    help="Minimum severity threshold (overrides config).",
+)
+@click.option(
+    "--format",
+    "-f",
+    "output_format",
+    type=click.Choice(["text", "json", "sarif"], case_sensitive=False),
+    default=None,
+    help="Output format (overrides config).",
+)
+@click.option(
+    "--output",
+    "-o",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Write results to file instead of stdout.",
+)
+@click.option(
+    "--rule",
+    "enabled_rules",
+    multiple=True,
+    help="Enable only specific rule IDs (repeatable).",
+)
+@click.option(
+    "--disable-rule",
+    "disabled_rules",
+    multiple=True,
+    help="Disable specific rule IDs (repeatable).",
+)
+@click.option(
+    "--rules-dir",
+    "rules_dirs",
+    multiple=True,
+    type=click.Path(path_type=Path),
+    help="Additional directory containing custom rules (repeatable).",
+)
+@click.option(
+    "--exclude",
+    "excludes",
+    multiple=True,
+    help="Glob pattern to exclude from scanning (repeatable).",
+)
+@click.option(
+    "--quiet",
+    "-q",
+    is_flag=True,
+    default=False,
+    help="Suppress banner and summary; output findings only.",
+)
+@click.option(
+    "--no-progress",
+    is_flag=True,
+    default=False,
+    help="Suppress progress output to stderr.",
+)
+@click.option(
+    "--fail-on",
+    "fail_on",
+    type=click.Choice(
+        ["critical", "high", "medium", "low", "info", "never"], case_sensitive=False
+    ),
+    default=None,
+    help="Exit with code 1 if any finding at or above this severity is found.",
+)
 def scan(
     target: Path,
     config: Path | None,
@@ -80,7 +136,7 @@ def scan(
     TARGET defaults to the current directory.
     """
     silent = quiet or no_progress
-    cli_overrides: dict = {"target_path": target}
+    cli_overrides: dict[str, object] = {"target_path": target}
     if severity:
         cli_overrides["severity_threshold"] = severity
     if output_format:
@@ -103,7 +159,9 @@ def scan(
         sys.exit(2)
 
     if not silent:
-        console.print(f"[bold]llm-scan[/bold] v{__version__}  scanning [cyan]{cfg.target_path}[/cyan] …")
+        console.print(
+            f"[bold]llm-scan[/bold] v{__version__}  scanning [cyan]{cfg.target_path}[/cyan] …"
+        )
 
     try:
         result: ScanResult = run_scan(cfg)
@@ -118,6 +176,12 @@ def scan(
             f"{result.duration_seconds:.2f}s — "
             f"[{'bold red' if n else 'bold green'}]{n} finding(s)[/]"
         )
+        if result.errors:
+            console.print(
+                f"[yellow]{len(result.errors)} warning(s) during scan[/yellow]"
+            )
+            for err in result.errors[:10]:
+                console.print(f"  [dim]• {err}[/dim]")
 
     fmt = cfg.output_format
     if fmt == "json":
@@ -151,9 +215,13 @@ def version_cmd() -> None:
 
 
 @cli.command("init")
-@click.option("--output", "-o", type=click.Path(path_type=Path),
-              default=Path(".llm-scanner.yml"),
-              help="Where to write the config file.")
+@click.option(
+    "--output",
+    "-o",
+    type=click.Path(path_type=Path),
+    default=Path(".llm-scanner.yml"),
+    help="Where to write the config file.",
+)
 def init(output: Path) -> None:
     """Generate a default .llm-scanner.yml in the current directory."""
     if output.exists():

@@ -1,5 +1,7 @@
 """SARIF 2.1.0 output formatter for GitHub Code Scanning."""
+
 from __future__ import annotations
+
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -17,7 +19,7 @@ SARIF_SEVERITY_MAP = {
 }
 
 
-def _make_rule(finding: Finding) -> dict:
+def _make_rule(finding: Finding) -> dict[str, object]:
     return {
         "id": finding.rule_id,
         "name": finding.rule_name.replace("-", " ").title().replace(" ", ""),
@@ -36,9 +38,13 @@ def _make_rule(finding: Finding) -> dict:
     }
 
 
-def _make_result(finding: Finding, base_path: Path | None = None) -> dict:
+def _make_result(finding: Finding, base_path: Path | None = None) -> dict[str, object]:
     try:
-        uri = finding.file_path.relative_to(base_path).as_posix() if base_path else finding.file_path.as_posix()
+        uri = (
+            finding.file_path.relative_to(base_path).as_posix()
+            if base_path
+            else finding.file_path.as_posix()
+        )
     except ValueError:
         uri = finding.file_path.as_posix()
 
@@ -77,7 +83,7 @@ def format_sarif(result: ScanResult, base_path: Path | None = None) -> str:
     active = result.active_findings
 
     # Deduplicate rules
-    seen_rules: dict[str, dict] = {}
+    seen_rules: dict[str, dict[str, object]] = {}
     for f in active:
         if f.rule_id not in seen_rules:
             seen_rules[f.rule_id] = _make_rule(f)

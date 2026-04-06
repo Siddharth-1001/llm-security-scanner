@@ -1,5 +1,7 @@
 """Rich terminal output formatter."""
+
 from __future__ import annotations
+
 from io import StringIO
 
 from rich.console import Console
@@ -7,7 +9,7 @@ from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
 
-from llm_scanner.findings.models import Finding, Severity
+from llm_scanner.findings.models import Severity
 from llm_scanner.scanner import ScanResult
 
 SEVERITY_COLORS = {
@@ -76,12 +78,29 @@ def format_text(result: ScanResult, use_color: bool = True) -> str:
     sev_table = Table(title="Findings by Severity", show_header=True)
     sev_table.add_column("Severity")
     sev_table.add_column("Count", justify="right")
-    for sev in [Severity.CRITICAL, Severity.HIGH, Severity.MEDIUM, Severity.LOW, Severity.INFO]:
+    for sev in [
+        Severity.CRITICAL,
+        Severity.HIGH,
+        Severity.MEDIUM,
+        Severity.LOW,
+        Severity.INFO,
+    ]:
         n = counts.get(sev.value, 0)
         if n:
             color = SEVERITY_COLORS.get(sev, "white")
             sev_table.add_row(f"[{color}]{sev.value.upper()}[/{color}]", str(n))
     if any(counts.values()):
         console.print(sev_table)
+
+    # Show errors/warnings if any
+    if result.errors:
+        console.print()
+        console.print(
+            f"[yellow]⚠ {len(result.errors)} warning(s) during scan:[/yellow]"
+        )
+        for err in result.errors[:10]:
+            console.print(f"  [dim]• {err}[/dim]")
+        if len(result.errors) > 10:
+            console.print(f"  [dim]… and {len(result.errors) - 10} more[/dim]")
 
     return buf.getvalue()
