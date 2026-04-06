@@ -37,7 +37,7 @@ tags:
 
 # (required) List of detection patterns
 patterns:
-  - type: string   # function_call | argument_missing | argument_tainted | output_to_sink | string_concat_taint
+  - type: string   # function_call | argument_missing | argument_tainted | output_to_sink | string_concat_taint | import_check
 
     # For function_call, argument_missing, argument_tainted, output_to_sink:
     # Single function name (dotted) OR use 'functions' for multiple
@@ -55,3 +55,6 @@ patterns:
     # For output_to_sink: list of dangerous sink functions
     sinks:
       - string
+
+    # For import_check: module name to flag when imported
+    module: string
