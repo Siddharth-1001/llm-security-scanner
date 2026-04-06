@@ -65,7 +65,7 @@ def discover_files(
     """
     root = root.resolve()
 
-    spec = pathspec.PathSpec.from_lines("gitwildmatch", exclude_globs or [])
+    spec = pathspec.PathSpec.from_lines("gitignore", exclude_globs or [])
 
     results: list[SourceFile] = []
 
