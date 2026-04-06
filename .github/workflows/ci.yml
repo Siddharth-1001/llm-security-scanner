@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
   pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
 
 jobs:
   lint:
@@ -40,7 +44,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10", "3.11", "3.12"]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -49,9 +53,29 @@ jobs:
       - name: Install package with test extras
         run: pip install -e ".[test]"
       - name: Run pytest
-        run: pytest
+        run: pytest --cov=src/llm_scanner --cov-report=xml --cov-fail-under=75
       - name: Upload coverage to Codecov
         if: matrix.python-version == '3.12'
         uses: codecov/codecov-action@v4
         with:
+          file: coverage.xml
           fail_ci_if_error: false
+
+  self-scan:
+    name: Self-scan (dogfood)
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e .
+      - name: Run llm-scan on own codebase
+        run: llm-scan scan src/ --format sarif --output self-scan.sarif --severity high
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: self-scan.sarif
