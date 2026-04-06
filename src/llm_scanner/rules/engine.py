@@ -10,12 +10,16 @@ from llm_scanner.rules.models import Pattern, Rule
 
 logger = logging.getLogger(__name__)
 
-BUILTIN_RULES_DIR = Path(__file__).parent.parent.parent.parent / "rules" / "builtin"
+# Builtin rules live inside the package at llm_scanner/rules/builtin/
+BUILTIN_RULES_DIR = Path(__file__).parent / "builtin"
 
 
 def _parse_pattern(raw: dict[str, Any]) -> Pattern:
+    ptype = raw.get("type")
+    if ptype is None:
+        raise ValueError("Pattern missing required 'type' field")
     return Pattern(
-        type=raw["type"],
+        type=ptype,
         function=raw.get("function"),
         functions=raw.get("functions", []),
         argument=raw.get("argument"),
@@ -31,6 +35,11 @@ def _load_rule_file(path: Path) -> Rule | None:
         data = yaml.safe_load(path.read_text(encoding="utf-8"))
         if not data:
             return None
+        # Validate required fields
+        for required in ("id", "name", "category", "severity", "patterns"):
+            if required not in data:
+                logger.warning(f"Rule {path} missing required field '{required}'")
+                return None
         patterns = [_parse_pattern(p) for p in data.get("patterns", [])]
         return Rule(
             id=data["id"],
@@ -56,6 +65,7 @@ def load_rules(
     disabled_rules: list[str] | None = None,
 ) -> list[Rule]:
     rules: list[Rule] = []
+    seen_ids: dict[str, Path] = {}
     search_dirs = [BUILTIN_RULES_DIR]
     if custom_dirs:
         search_dirs.extend(custom_dirs)
@@ -65,8 +75,17 @@ def load_rules(
             logger.debug(f"Rules directory not found: {rules_dir}")
             continue
         for yaml_file in sorted(rules_dir.rglob("*.yaml")):
+            if yaml_file.name == "schema.yaml":
+                continue
             rule = _load_rule_file(yaml_file)
             if rule:
+                if rule.id in seen_ids:
+                    logger.warning(
+                        f"Duplicate rule ID '{rule.id}' in {yaml_file} "
+                        f"(first seen in {seen_ids[rule.id]}), skipping duplicate"
+                    )
+                    continue
+                seen_ids[rule.id] = yaml_file
                 rules.append(rule)
 
     # Apply enable/disable filters

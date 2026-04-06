@@ -1,0 +1,31 @@
+id: LLM08-003
+name: subprocess-execution-in-llm-tool
+category: LLM08
+severity: critical
+cwe: CWE-78
+languages:
+  - python
+description: >
+  An LLM agent tool uses subprocess or os.system to execute shell commands,
+  giving the LLM unrestricted command execution capability. An attacker can
+  use prompt injection to run arbitrary system commands through this tool.
+remediation: >
+  Avoid providing shell command execution as an LLM tool. If a specific operation
+  is needed, implement it as a dedicated, purpose-built function with strict input
+  validation. Never use shell=True. If command execution is unavoidable, use
+  a container sandbox with network isolation and resource limits.
+references:
+  - https://owasp.org/www-project-top-10-for-llm-applications/
+  - https://cwe.mitre.org/data/definitions/78.html
+tags:
+  - excessive-agency
+  - command-injection
+  - subprocess
+patterns:
+  - type: function_call
+    functions:
+      - subprocess.run
+      - subprocess.call
+      - subprocess.Popen
+      - os.system
+      - os.popen

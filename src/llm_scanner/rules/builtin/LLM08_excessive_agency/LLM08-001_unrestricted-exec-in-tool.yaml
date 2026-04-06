@@ -1,0 +1,30 @@
+id: LLM08-001
+name: unrestricted-code-execution-in-llm-tool
+category: LLM08
+severity: critical
+cwe: CWE-284
+languages:
+  - python
+description: >
+  An LLM agent tool definition includes eval() or exec() allowing the LLM to execute
+  arbitrary Python code. Combined with the LLM's ability to be manipulated via prompt
+  injection, this creates a critical arbitrary code execution vulnerability with no
+  human oversight.
+remediation: >
+  Never provide eval() or exec() as LLM agent tools. If code execution is required,
+  use a sandboxed environment (RestrictedPython, subprocess in a container with
+  strict resource limits). Always implement human-in-the-loop review for any
+  destructive or irreversible actions.
+references:
+  - https://owasp.org/www-project-top-10-for-llm-applications/
+  - https://llmtop10.com/llm08/
+tags:
+  - excessive-agency
+  - code-execution
+  - langchain
+patterns:
+  - type: function_call
+    functions:
+      - exec
+      - eval
+      - compile

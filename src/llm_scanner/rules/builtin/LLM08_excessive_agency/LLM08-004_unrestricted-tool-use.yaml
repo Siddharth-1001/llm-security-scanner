@@ -1,0 +1,44 @@
+id: LLM08-004
+name: unrestricted-tool-use
+category: LLM08
+severity: critical
+cwe: CWE-250
+languages:
+  - python
+description: >
+  An LLM agent is configured with tools that have no permission boundaries or
+  approval gates. When an agent has unrestricted access to powerful tools (code
+  execution, database queries, API calls, file system), a single prompt injection
+  or hallucination can trigger catastrophic actions. This is the #1 risk in
+  agentic AI deployments in 2025-2026.
+remediation: >
+  Apply the principle of least privilege to all agent tools:
+
+  1. Scope tools to minimum required permissions
+  2. Add human-in-the-loop confirmation for destructive actions
+  3. Sandbox code execution (containers, gVisor)
+  4. Use allow-lists for file paths, shell commands, and API endpoints
+  5. Set token/cost budgets per agent invocation
+
+    tools = [
+        Tool(name="read_file", func=read_file, allowed_paths=["/data/"]),
+        Tool(name="query_db", func=query_db, read_only=True),
+    ]
+references:
+  - https://owasp.org/www-project-top-10-for-llm-applications/
+  - https://llmtop10.com/llm08/
+  - https://cwe.mitre.org/data/definitions/250.html
+tags:
+  - excessive-agency
+  - agent
+  - tool-use
+  - agentic
+patterns:
+  - type: function_call
+    functions:
+      - initialize_agent
+      - AgentExecutor
+      - create_react_agent
+      - create_openai_functions_agent
+      - ToolNode
+      - create_tool_calling_agent

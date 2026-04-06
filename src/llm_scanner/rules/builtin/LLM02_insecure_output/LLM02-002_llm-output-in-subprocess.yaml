@@ -1,0 +1,38 @@
+id: LLM02-002
+name: llm-output-in-subprocess
+category: LLM02
+severity: critical
+cwe: CWE-78
+languages:
+  - python
+description: >
+  Output from an LLM API call is passed to subprocess.run(), subprocess.call(),
+  os.system(), or similar OS command execution functions. This creates a command
+  injection vulnerability, as LLM output is untrusted and can be manipulated by
+  an attacker via prompt injection.
+remediation: >
+  Never pass LLM output directly to shell execution functions. If you need the LLM
+  to suggest commands, parse and validate the specific command structure against an
+  allowlist. Use subprocess with a list of arguments (not shell=True) and validate
+  each argument independently.
+references:
+  - https://owasp.org/www-project-top-10-for-llm-applications/
+  - https://cwe.mitre.org/data/definitions/78.html
+tags:
+  - insecure-output
+  - command-injection
+  - subprocess
+patterns:
+  - type: output_to_sink
+    sinks:
+      - subprocess.run
+      - subprocess.call
+      - subprocess.Popen
+      - os.system
+      - os.popen
+    functions:
+      - ChatCompletion.create
+      - chat.completions.create
+      - client.chat.completions.create
+      - messages.create
+      - client.messages.create

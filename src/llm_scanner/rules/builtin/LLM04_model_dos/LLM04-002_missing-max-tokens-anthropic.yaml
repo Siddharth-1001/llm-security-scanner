@@ -1,0 +1,32 @@
+id: LLM04-002
+name: missing-max-tokens-anthropic
+category: LLM04
+severity: high
+cwe: CWE-400
+languages:
+  - python
+description: >
+  An Anthropic API call (messages.create) is made without specifying max_tokens.
+  The Anthropic API requires max_tokens but its absence can lead to unexpected
+  behavior or excessive token generation in some SDK versions.
+remediation: >
+  Always set max_tokens on Anthropic API calls:
+
+    message = client.messages.create(
+        model="claude-3-opus-20240229",
+        max_tokens=1024,
+        messages=[{"role": "user", "content": prompt}]
+    )
+references:
+  - https://docs.anthropic.com/en/api/messages
+  - https://owasp.org/www-project-top-10-for-llm-applications/
+tags:
+  - model-dos
+  - rate-limiting
+  - anthropic
+patterns:
+  - type: argument_missing
+    functions:
+      - messages.create
+      - client.messages.create
+    argument: max_tokens

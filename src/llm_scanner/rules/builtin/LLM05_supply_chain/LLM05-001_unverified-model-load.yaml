@@ -1,0 +1,38 @@
+id: LLM05-001
+name: unverified-model-load
+category: LLM05
+severity: high
+cwe: CWE-494
+languages:
+  - python
+description: >
+  Loading a model from an untrusted or unverified source without integrity checks.
+  Serialized model files (pickle, safetensors, GGUF) can contain arbitrary code
+  that executes on load. In 2025-2026, supply chain attacks via malicious model
+  weights on public hubs have become a major attack vector.
+remediation: >
+  Always verify model checksums and use trusted sources. Prefer safetensors format
+  over pickle-based formats. Pin model revisions by SHA in production:
+
+    from transformers import AutoModel
+    model = AutoModel.from_pretrained(
+        "org/model-name",
+        revision="abc123def",  # pin to specific commit
+        trust_remote_code=False,  # never trust remote code
+    )
+references:
+  - https://owasp.org/www-project-top-10-for-llm-applications/
+  - https://llmtop10.com/llm05/
+  - https://cwe.mitre.org/data/definitions/494.html
+tags:
+  - supply-chain
+  - model-loading
+  - pickle
+patterns:
+  - type: function_call
+    functions:
+      - torch.load
+      - pickle.load
+      - pickle.loads
+      - joblib.load
+      - from_pretrained

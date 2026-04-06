@@ -1,0 +1,48 @@
+id: LLM01-001
+name: user-input-in-system-prompt
+category: LLM01
+severity: critical
+cwe: CWE-77
+languages:
+  - python
+description: >
+  User-controlled input is directly interpolated into an LLM system prompt or message
+  via f-strings or string concatenation. This enables prompt injection attacks where
+  an attacker can override system instructions, exfiltrate data, or manipulate model behavior.
+remediation: >
+  Separate user input from system instructions. Keep the system prompt as a static
+  string constant. Pass user input only in the "user" role messages. If user data
+  must appear in context, use parameterized templates with strict validation and
+  escaping of prompt control characters.
+
+  Example (vulnerable):
+    system_prompt = f"You are an assistant. User said: {user_input}"
+
+  Example (safe):
+    SYSTEM_PROMPT = "You are a helpful assistant."
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": user_input},
+    ]
+references:
+  - https://owasp.org/www-project-top-10-for-llm-applications/
+  - https://llmtop10.com/llm01/
+  - https://cwe.mitre.org/data/definitions/77.html
+tags:
+  - prompt-injection
+  - user-input
+  - openai
+patterns:
+  - type: argument_tainted
+    functions:
+      - ChatCompletion.create
+      - chat.completions.create
+      - client.chat.completions.create
+    tainted_sources:
+      - request
+      - user_input
+      - user_message
+      - user_data
+      - query
+      - input
+      - argv

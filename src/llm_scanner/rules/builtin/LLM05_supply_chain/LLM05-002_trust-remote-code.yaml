@@ -1,0 +1,33 @@
+id: LLM05-002
+name: trust-remote-code-enabled
+category: LLM05
+severity: critical
+cwe: CWE-94
+languages:
+  - python
+description: >
+  Model loaded with trust_remote_code=True, allowing arbitrary Python execution
+  from the model repository. This is equivalent to running untrusted code from
+  the internet and has been exploited in real supply chain attacks.
+remediation: >
+  Never use trust_remote_code=True in production. If custom model architectures
+  are required, vendor the code locally and audit it:
+
+    # Dangerous:
+    model = AutoModel.from_pretrained("user/model", trust_remote_code=True)
+
+    # Safe:
+    model = AutoModel.from_pretrained("user/model", trust_remote_code=False)
+references:
+  - https://owasp.org/www-project-top-10-for-llm-applications/
+  - https://cwe.mitre.org/data/definitions/94.html
+tags:
+  - supply-chain
+  - remote-code-execution
+patterns:
+  - type: function_call
+    functions:
+      - from_pretrained
+      - AutoModel.from_pretrained
+      - AutoTokenizer.from_pretrained
+      - pipeline

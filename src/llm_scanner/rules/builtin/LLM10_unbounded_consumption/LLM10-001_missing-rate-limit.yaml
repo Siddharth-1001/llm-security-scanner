@@ -1,0 +1,39 @@
+id: LLM10-001
+name: missing-rate-limit-on-llm-endpoint
+category: LLM10
+severity: high
+cwe: CWE-770
+languages:
+  - python
+description: >
+  LLM API endpoint exposed without rate limiting. Without rate limits,
+  attackers can exhaust API quotas, run up costs, or perform denial-of-wallet
+  attacks against your LLM provider billing. This is especially critical with
+  expensive frontier models where a single unbounded loop can cost thousands.
+remediation: >
+  Apply rate limiting middleware to all LLM-facing API endpoints:
+
+    from flask_limiter import Limiter
+    limiter = Limiter(app, default_limits=["100 per minute"])
+
+    @app.route("/chat")
+    @limiter.limit("10 per minute")
+    def chat():
+        ...
+
+  Also set per-user token budgets and monitor usage.
+references:
+  - https://owasp.org/www-project-top-10-for-llm-applications/
+  - https://llmtop10.com/llm10/
+  - https://cwe.mitre.org/data/definitions/770.html
+tags:
+  - unbounded-consumption
+  - rate-limit
+  - cost-control
+patterns:
+  - type: function_call
+    functions:
+      - app.route
+      - router.post
+      - router.get
+      - APIRouter

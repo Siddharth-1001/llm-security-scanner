@@ -1,0 +1,47 @@
+id: LLM06-004
+name: api-key-hardcoded
+category: LLM06
+severity: critical
+cwe: CWE-798
+languages:
+  - python
+description: >
+  An API key or secret token for an LLM provider is hardcoded in source code.
+  Hardcoded credentials in version control can be extracted by anyone with
+  repository access and lead to unauthorized API usage, billing fraud, and
+  data exfiltration through the compromised API key.
+remediation: >
+  Never hardcode API keys. Use environment variables or secret managers:
+
+    # Dangerous:
+    client = openai.OpenAI(api_key="sk-...")
+
+    # Safe:
+    import os
+    client = openai.OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+
+    # Even better — use a secret manager:
+    from aws_secretsmanager import get_secret
+    client = openai.OpenAI(api_key=get_secret("openai-key"))
+references:
+  - https://owasp.org/www-project-top-10-for-llm-applications/
+  - https://cwe.mitre.org/data/definitions/798.html
+tags:
+  - sensitive-info
+  - hardcoded-secret
+  - api-key
+patterns:
+  - type: argument_tainted
+    functions:
+      - openai.OpenAI
+      - anthropic.Anthropic
+      - OpenAI
+      - Anthropic
+      - Cohere
+      - cohere.Client
+    tainted_sources:
+      - api_key
+      - secret_key
+      - token
+      - auth_token
+      - access_token

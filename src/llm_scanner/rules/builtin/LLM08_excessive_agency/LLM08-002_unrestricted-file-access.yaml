@@ -1,0 +1,38 @@
+id: LLM08-002
+name: unrestricted-filesystem-access-in-tool
+category: LLM08
+severity: high
+cwe: CWE-284
+languages:
+  - python
+description: >
+  An LLM agent tool provides unrestricted file system access using open() or
+  pathlib.Path operations without path validation or sandboxing. This allows
+  the LLM to read sensitive files (e.g., /etc/passwd, SSH keys, .env files)
+  or overwrite critical system files through prompt injection.
+remediation: >
+  Restrict file access to a specific allowed directory. Validate all file paths
+  against an allowlist or use chroot/container sandboxing. Implement separate
+  read-only and write tools with strict path validation.
+
+  Example:
+    ALLOWED_DIR = Path("/app/data")
+    def safe_read(path: str) -> str:
+        full_path = (ALLOWED_DIR / path).resolve()
+        if not str(full_path).startswith(str(ALLOWED_DIR)):
+            raise ValueError("Path traversal detected")
+        return full_path.read_text()
+references:
+  - https://owasp.org/www-project-top-10-for-llm-applications/
+tags:
+  - excessive-agency
+  - file-access
+  - path-traversal
+patterns:
+  - type: function_call
+    functions:
+      - open
+      - Path.read_text
+      - Path.write_text
+      - os.remove
+      - shutil.rmtree

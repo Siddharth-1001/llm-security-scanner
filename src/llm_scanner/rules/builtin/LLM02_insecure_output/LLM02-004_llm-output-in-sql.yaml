@@ -1,0 +1,39 @@
+id: LLM02-004
+name: llm-output-in-sql-query
+category: LLM02
+severity: critical
+cwe: CWE-89
+languages:
+  - python
+description: >
+  LLM-generated output is concatenated directly into a SQL query string without
+  parameterization. Since LLM output is untrusted (and can be manipulated via prompt
+  injection), this creates a SQL injection vulnerability allowing an attacker to
+  read, modify, or delete database contents.
+remediation: >
+  Never concatenate LLM output into SQL queries. Use parameterized queries or an ORM:
+
+  Example (vulnerable):
+    query = "SELECT * FROM users WHERE name = '" + llm_response + "'"
+    cursor.execute(query)
+
+  Example (safe):
+    cursor.execute("SELECT * FROM users WHERE name = ?", (validated_name,))
+references:
+  - https://owasp.org/www-project-top-10-for-llm-applications/
+  - https://cwe.mitre.org/data/definitions/89.html
+tags:
+  - insecure-output
+  - sql-injection
+patterns:
+  - type: output_to_sink
+    sinks:
+      - cursor.execute
+      - execute
+      - executemany
+    functions:
+      - ChatCompletion.create
+      - chat.completions.create
+      - client.chat.completions.create
+      - messages.create
+      - client.messages.create

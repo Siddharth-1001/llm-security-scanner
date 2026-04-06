@@ -1,0 +1,45 @@
+id: LLM06-001
+name: pii-variables-in-prompt
+category: LLM06
+severity: high
+cwe: CWE-312
+languages:
+  - python
+description: >
+  Variables with names suggesting PII (ssn, email, phone, credit_card, password,
+  social_security, dob, date_of_birth) are passed directly into LLM API prompts
+  without redaction. Sending PII to third-party LLM APIs may violate GDPR, HIPAA,
+  CCPA, and other privacy regulations, and exposes sensitive data to LLM providers.
+remediation: >
+  Redact or anonymize PII before including it in LLM prompts. Use a PII detection
+  library (e.g., Microsoft Presidio, AWS Comprehend) to scrub sensitive data.
+  Consider whether the LLM actually needs the raw PII or if anonymized data suffices.
+references:
+  - https://owasp.org/www-project-top-10-for-llm-applications/
+  - https://llmtop10.com/llm06/
+tags:
+  - sensitive-info
+  - pii
+  - privacy
+patterns:
+  - type: argument_tainted
+    functions:
+      - ChatCompletion.create
+      - chat.completions.create
+      - client.chat.completions.create
+      - messages.create
+      - client.messages.create
+    tainted_sources:
+      - ssn
+      - email
+      - phone
+      - phone_number
+      - credit_card
+      - card_number
+      - password
+      - passwd
+      - social_security
+      - dob
+      - date_of_birth
+      - pii
+      - personal_data

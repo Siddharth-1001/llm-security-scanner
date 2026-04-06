@@ -1,0 +1,33 @@
+id: LLM02-003
+name: llm-output-rendered-as-html
+category: LLM02
+severity: high
+cwe: CWE-79
+languages:
+  - python
+description: >
+  LLM output is rendered as unescaped HTML, creating a Cross-Site Scripting (XSS)
+  vulnerability. An attacker can manipulate LLM output via prompt injection to include
+  malicious JavaScript that will execute in users' browsers.
+remediation: >
+  Always escape LLM output before rendering it as HTML. Use your framework's
+  auto-escaping features (Jinja2 autoescape, Django's mark_safe only for trusted content).
+  If you must render HTML from LLM output, use a strict HTML sanitizer like bleach
+  with an allowlist of safe tags.
+references:
+  - https://owasp.org/www-project-top-10-for-llm-applications/
+  - https://cwe.mitre.org/data/definitions/79.html
+tags:
+  - insecure-output
+  - xss
+  - html
+patterns:
+  - type: output_to_sink
+    sinks:
+      - Markup
+      - mark_safe
+      - render_template_string
+    functions:
+      - ChatCompletion.create
+      - chat.completions.create
+      - messages.create

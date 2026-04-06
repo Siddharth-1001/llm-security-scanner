@@ -1,0 +1,41 @@
+id: LLM01-002
+name: langchain-prompt-template-injection
+category: LLM01
+severity: high
+cwe: CWE-77
+languages:
+  - python
+description: >
+  LangChain PromptTemplate is constructed with user-controlled input embedded directly
+  in the template string rather than as a properly scoped input variable. This allows
+  an attacker to break out of the intended prompt structure and inject arbitrary instructions.
+remediation: >
+  Use LangChain's PromptTemplate input_variables mechanism to safely pass user data.
+  Never embed user input directly into the template string.
+
+  Example (vulnerable):
+    template = f"Answer this question: {user_question}"
+    prompt = PromptTemplate(template=template, input_variables=[])
+
+  Example (safe):
+    template = "Answer this question: {question}"
+    prompt = PromptTemplate(template=template, input_variables=["question"])
+    result = prompt.format(question=user_question)
+references:
+  - https://python.langchain.com/docs/modules/model_io/prompts/
+  - https://owasp.org/www-project-top-10-for-llm-applications/
+tags:
+  - prompt-injection
+  - langchain
+patterns:
+  - type: argument_tainted
+    functions:
+      - PromptTemplate
+      - ChatPromptTemplate.from_template
+      - PromptTemplate.from_template
+    tainted_sources:
+      - request
+      - user_input
+      - user_message
+      - query
+      - input
