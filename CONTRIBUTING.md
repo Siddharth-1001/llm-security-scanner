@@ -11,7 +11,7 @@ This project follows the [Contributor Covenant Code of Conduct v2.1](https://www
 ### Development Environment Setup
 
 ```bash
-git clone https://github.com/<org>/llm-security-scanner.git
+git clone https://github.com/llm-security-scanner/llm-security-scanner.git
 cd llm-security-scanner
 
 python -m venv .venv
@@ -28,6 +28,10 @@ pytest  # verify setup
 | Path | Description |
 |------|-------------|
 | `src/llm_scanner/` | Core scanner code |
+| `src/llm_scanner/rules/` | Rule engine, matchers, and models |
+| `src/llm_scanner/findings/` | Finding models and suppression |
+| `src/llm_scanner/formatters/` | Text, JSON, SARIF output |
+| `src/llm_scanner/parsers/` | Language-specific AST parsers |
 | `rules/builtin/` | Built-in detection rules (YAML) |
 | `tests/` | Unit, integration tests, and fixtures |
 | `docs/` | Documentation source |
@@ -102,10 +106,8 @@ chore: update tree-sitter dependency to v0.22
 
 **DO NOT** open a public GitHub issue for security vulnerabilities in the scanner itself.
 
-Use GitHub Security Advisories (private reporting) or email `security@<project-domain>`.
-
-We aim to acknowledge reports within 48 hours and provide a fix within 7 days.
+See [SECURITY.md](SECURITY.md) for responsible disclosure instructions.
 
 ## License
 
-Apache License 2.0. By contributing, you agree your contributions will be licensed under the same license.
+MIT License. By contributing, you agree your contributions will be licensed under the same license.
